@@ -1,0 +1,7 @@
+@import 'reveal.js/css/reveal.css';
+<% if (obj.theme) { %>
+    @import 'reveal.js/css/theme/<%= obj.theme %>.css';
+<% } else { %>
+    @import 'reveal.js/css/theme/black.css';
+<% } %>
+

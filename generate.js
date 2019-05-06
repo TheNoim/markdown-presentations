@@ -4,7 +4,8 @@ const {
 	ensureDir,
 	readFile: readFileA,
 	writeFile,
-	exists
+	exists,
+	lstat
 } = require('fs-extra');
 const { join, basename } = require('path');
 const { defaultsDeep, template, get } = require('lodash');
@@ -14,6 +15,17 @@ const nanoid = require('nanoid');
 const { dd } = require('dumper.js');
 const Bundler = require('parcel-bundler');
 const fm = require('front-matter');
+const showdown = require('showdown');
+const converter = new showdown.Converter({
+	parseImgDimensions: true,
+	simplifiedAutoLink: true,
+	strikethrough: true,
+	tables: true,
+	tasklists: true,
+	openLinksInNewWindow: true,
+	backslashEscapesHTMLTags: true,
+	emoji: true
+});
 
 const readFile = async (...args) => {
 	const content = await readFileA(...args);
@@ -48,6 +60,11 @@ const readFile = async (...args) => {
 	for (const project of projects) {
 		const projectTmp = join(tmpDir, project);
 		const projectDir = join(projectsDir, project);
+
+		const stat = await lstat(projectDir);
+
+		if (!stat.isDirectory()) continue;
+
 		const projectDistDir = join(distDir, project);
 		const projectSlidesDir = join(projectDir, './slides/');
 		const projectNotesDir = join(projectDir, './notes/');
@@ -201,8 +218,40 @@ const readFile = async (...args) => {
 					$(`#${childSlideId}`).removeAttr('id');
 				}
 			}
+
 			$(`#${slideId}`).removeAttr('id');
 		}
+
+		const $comments = $('*')
+			.contents()
+			.filter(function() {
+				return this.nodeType === 8;
+			});
+
+		$comments.each(function() {
+			const self = $(this);
+			let parent;
+			if (self.prev().length > 0) {
+				parent = self.prev();
+			} else {
+				parent = self.parent();
+			}
+			/**
+			 * @type {string}
+			 */
+			const data = this.data;
+			if (data && data.includes('.mod:')) {
+				// Mod the parent thing
+				const attrs = data.replace(/(\s)?\.mod:(\s)?/gm, '');
+				const attrObjects = $(`<div ${attrs}></div>`)
+					.first()
+					.attr();
+				for (const Key in attrObjects) {
+					parent.attr(Key, attrObjects[Key]);
+				}
+				self.remove();
+			}
+		});
 
 		const projectHTML = $.html();
 
@@ -231,22 +280,22 @@ function generateSection(slide, $) {
 	const slideSelector = `#${slideId}`;
 	const title = get(slide, 'meta.title');
 	$(slideSelector).attr('title', title);
-	const notesContent = get(slide, 'notesContent', false);
+	let notesContent = get(slide, 'notesContent', false);
 	const slideContent = get(slide, 'slideContent', '');
 	const slideContentId = nanoid();
-	$(
-		`<div data-markdown><script type="text/template" id="${slideContentId}"></script></div>`
-	).prependTo($(slideSelector));
-	$(`#${slideContentId}`).text(slideContent);
+	$(slideSelector).html(converter.makeHtml(slideContent));
 
-	if (notesContent) {
-		const notesContentId = nanoid();
-		$(
-			`<aside class="notes" data-markdown><script type="text/template" id="${notesContentId}"></script></aside>`
-		).appendTo($(slideSelector));
-		$(`#${notesContentId}`).text(notesContent);
-		$(`#${notesContentId}`).removeAttr('id');
+	if (!notesContent) {
+		notesContent = slideContent;
 	}
+
+	const notesContentId = nanoid();
+	$(`<aside class="notes" id="${notesContentId}"></aside>`).appendTo(
+		$(slideSelector)
+	);
+	$(`#${notesContentId}`).html(converter.makeHtml(notesContent));
+	$(`#${notesContentId}`).removeAttr('id');
+
 	$(`#${slideContentId}`).removeAttr('id');
 }
 

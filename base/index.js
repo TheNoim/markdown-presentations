@@ -16,6 +16,9 @@ globalThis.Reveal = Reveal;
 require('reveal.js/plugin/markdown/marked');
 require('reveal.js/plugin/markdown/markdown');
 require('reveal.js/plugin/notes/notes.js');
+require('../../plugins/reveal.js-appearance/assets/js/revealjs/plugin/transit/transit.js');
+require('../../plugins/reveal.js-appearance/assets/js/revealjs/plugin/appearance/appearance.js');
+require('../../plugins/reveal.js-verticator/assets/js/revealjs/plugin/verticator/verticator.js');
 
 <% if (obj.revealOptions) { %>
     const revealOptions = <%= JSON.stringify(obj.revealOptions) %>;
@@ -27,7 +30,10 @@ Reveal.initialize(defaultsDeep(revealOptions, {
 	controls: true,
 	slideNumber: true,
 	hash: true,
-    mouseWheel: true
+	mouseWheel: true,
+	verticator: {
+		color: 'white'
+	},
 }));
 
 initRemoteSocket(Reveal, "<%= obj.remote %>");

@@ -1,3 +1,4 @@
+@import 'reveal.js/css/reset.css';
 @import 'reveal.js/css/reveal.css';
 <% if (obj.theme) { %>
     @import 'reveal.js/css/theme/<%= obj.theme %>.css';
@@ -5,3 +6,7 @@
     @import 'reveal.js/css/theme/black.css';
 <% } %>
 
+@import 'reveal.js/css/print/paper.css';
+
+@import '../../plugins/reveal.js-appearance/assets/css/appearance.css';
+@import '../../plugins/reveal.js-verticator/assets/css/verticator.css';

@@ -1,0 +1,8 @@
+@charset "utf-8";
+
+@import '../../node_modules/bulma/sass/utilities/_all.sass';
+@import '../../node_modules/bulma/sass/grid/_all.sass';
+
+.display-flex-important {
+	display: flex !important;
+}

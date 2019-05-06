@@ -5,7 +5,8 @@ const {
 	readFile: readFileA,
 	writeFile,
 	exists,
-	lstat
+	lstat,
+	copyFile
 } = require('fs-extra');
 const { join, basename } = require('path');
 const { defaultsDeep, template, get } = require('lodash');
@@ -26,6 +27,24 @@ const converter = new showdown.Converter({
 	backslashEscapesHTMLTags: true,
 	emoji: true
 });
+const { base64encode, base64decode } = require('nodejs-base64');
+
+const matchHTMLTags = /<(\/)?[^\!].*?(\/)?>/gm;
+const commentTags = /<!--(\s)?TAG:(\s)?\|(.*?)\|(\s)?-->/gm;
+
+const commentHTMLTags = input => {
+	return input.replace(matchHTMLTags, m => {
+		console.log({ m });
+		return `<!-- TAG: |${base64encode(m)}| -->`;
+	});
+};
+
+const resolveHTMLTags = input => {
+	return input.replace(commentTags, function(m, a, b, base64Tag) {
+		console.log({ m, a, b, base64Tag });
+		return base64decode(base64Tag);
+	});
+};
 
 const readFile = async (...args) => {
 	const content = await readFileA(...args);
@@ -48,6 +67,7 @@ const readFile = async (...args) => {
 	const cssPath = join(__dirname, './base/index.css');
 	const jsPath = join(__dirname, './base/index.js');
 	const htmlPath = join(__dirname, './base/index.html');
+	const sassPath = join(__dirname, './base/index.scss');
 
 	const cssTemplateSrc = await readFile(cssPath);
 	const jsTemplateSrc = await readFile(jsPath);
@@ -70,6 +90,7 @@ const readFile = async (...args) => {
 		const projectNotesDir = join(projectDir, './notes/');
 		const projectConfig = join(projectDir, './config.json');
 		const projectCSSPath = join(projectTmp, './index.css');
+		const projectSASSPath = join(projectTmp, './index.scss');
 		const projectJSPath = join(projectTmp, './index.js');
 		const projectHTMLPath = join(projectTmp, './index.html');
 		const configSrc =
@@ -90,9 +111,11 @@ const readFile = async (...args) => {
 
 		await writeFile(projectJSPath, projectJS);
 
+		await copyFile(sassPath, projectSASSPath);
+
 		const html = htmlTemplate(config);
 
-		const $ = cheerio.load(html);
+		let $ = cheerio.load(html);
 
 		// Add slides
 
@@ -105,10 +128,12 @@ const readFile = async (...args) => {
 		for (const slidePath of slidePaths) {
 			const slideId = nanoid();
 			const slidePathName = basename(slidePath);
-			const slideContentOrg = await readFile(slidePath);
+			const slideContentOrg = commentHTMLTags(await readFile(slidePath));
+
 			const { attributes: metaSrc, body: slideContent } = fm(
 				slideContentOrg
 			);
+
 			const notesFileName = get(metaSrc, 'notes', slidePathName);
 			const meta = defaultsDeep(metaSrc, {
 				notes: notesFileName
@@ -123,10 +148,13 @@ const readFile = async (...args) => {
 			};
 
 			if (await exists(notesPath)) {
-				const notesContentOrg = await readFile(notesPath);
+				const notesContentOrg = commentHTMLTags(
+					await readFile(notesPath)
+				);
 				const { attributes: notesMeta, body: notesContent } = fm(
 					notesContentOrg
 				);
+
 				slideObject = {
 					...slideObject,
 					notesContent,
@@ -222,6 +250,14 @@ const readFile = async (...args) => {
 			$(`#${slideId}`).removeAttr('id');
 		}
 
+		let projectHTML = $.html()
+			.replace(/<!--(\s)*\.column(\s)*-->/gm, '<div class="column">')
+			.replace(/<!--(\s)*\.\/column(\s)*-->/gm, '</div>')
+			.replace(/<!--(\s)*\.div(\s)*-->/gm, '<div>')
+			.replace(/<!--(\s)*\.\/div(\s)*-->/gm, '</div>');
+
+		$ = cheerio.load(projectHTML);
+
 		const $comments = $('*')
 			.contents()
 			.filter(function() {
@@ -247,13 +283,14 @@ const readFile = async (...args) => {
 					.first()
 					.attr();
 				for (const Key in attrObjects) {
-					parent.attr(Key, attrObjects[Key]);
+					const currentAttr = parent.attr(Key) || '';
+					parent.attr(Key, currentAttr + ' ' + attrObjects[Key]);
 				}
 				self.remove();
 			}
 		});
 
-		const projectHTML = $.html();
+		projectHTML = $.html();
 
 		await writeFile(projectHTMLPath, projectHTML);
 
@@ -283,7 +320,7 @@ function generateSection(slide, $) {
 	let notesContent = get(slide, 'notesContent', false);
 	const slideContent = get(slide, 'slideContent', '');
 	const slideContentId = nanoid();
-	$(slideSelector).html(converter.makeHtml(slideContent));
+	$(slideSelector).html(resolveHTMLTags(converter.makeHtml(slideContent)));
 
 	if (!notesContent) {
 		notesContent = slideContent;
@@ -293,7 +330,9 @@ function generateSection(slide, $) {
 	$(`<aside class="notes" id="${notesContentId}"></aside>`).appendTo(
 		$(slideSelector)
 	);
-	$(`#${notesContentId}`).html(converter.makeHtml(notesContent));
+	$(`#${notesContentId}`).html(
+		resolveHTMLTags(converter.makeHtml(notesContent))
+	);
 	$(`#${notesContentId}`).removeAttr('id');
 
 	$(`#${slideContentId}`).removeAttr('id');

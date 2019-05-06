@@ -34,14 +34,12 @@ const commentTags = /<!--(\s)?TAG:(\s)?\|(.*?)\|(\s)?-->/gm;
 
 const commentHTMLTags = input => {
 	return input.replace(matchHTMLTags, m => {
-		console.log({ m });
 		return `<!-- TAG: |${base64encode(m)}| -->`;
 	});
 };
 
 const resolveHTMLTags = input => {
 	return input.replace(commentTags, function(m, a, b, base64Tag) {
-		console.log({ m, a, b, base64Tag });
 		return base64decode(base64Tag);
 	});
 };

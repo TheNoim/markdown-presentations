@@ -1,1 +1,3 @@
-Back to hermes
+-   Zauberstab
+-   geflügelten Reisehut
+-   Flügelschuhe

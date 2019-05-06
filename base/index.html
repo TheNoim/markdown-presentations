@@ -10,6 +10,48 @@
 		/>
 		<link rel="stylesheet" href="./index.css" id="theme" />
 		<link rel="stylesheet" href="./index.scss" />
+		<% if (obj.description) { %>
+		<meta name="description" content="<%= obj.description %>" />
+		<% } %> <% if (obj.authors) { %>
+		<meta name="author" content="<%= obj.authors.join(', ') %>" />
+		<% } %> <meta name="date" content=<%= JSON.stringify(new Date()) %> />
+		<meta name="rating" content="General" />
+		<link
+			rel="icon"
+			sizes="192x192"
+			type="image/png"
+			href="https://placekitten.com/g/192/192"
+		/>
+		<link
+			rel="icon"
+			sizes="62x62"
+			type="image/png"
+			href="https://placekitten.com/g/62/62"
+		/>
+		<link
+			rel="icon"
+			sizes="48x48"
+			type="image/png"
+			href="https://placekitten.com/g/48/48"
+		/>
+		<link
+			rel="icon"
+			sizes="32x32"
+			type="image/png"
+			href="https://placekitten.com/g/32/32"
+		/>
+		<link
+			rel="icon"
+			sizes="16x16"
+			type="image/png"
+			href="https://placekitten.com/g/16/16"
+		/>
+		<link
+			rel="icon"
+			sizes="8x8"
+			type="image/png"
+			href="https://placekitten.com/g/8/8"
+		/>
 	</head>
 	<body>
 		<div class="reveal">

@@ -1,0 +1,6 @@
+[submodule "plugins/reveal.js-verticator"]
+	path = plugins/reveal.js-verticator
+	url = https://github.com/Martinomagnifico/reveal.js-verticator.git
+[submodule "plugins/reveal.js-appearance"]
+	path = plugins/reveal.js-appearance
+	url = https://github.com/Martinomagnifico/reveal.js-appearance.git

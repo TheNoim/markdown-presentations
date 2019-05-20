@@ -9,6 +9,5 @@ slide: 2
 
 1. Wer war Hermes?
 2. Mythologie
-3. Einfluss in der Moderne
-4. Hermes in der Kunst
-5. Die Metamorphosen und Hermes
+3. Hermes in der Kunst
+4. Die Metamorphosen und Hermes

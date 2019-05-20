@@ -28,13 +28,28 @@ const converter = new showdown.Converter({
 	emoji: true
 });
 const { base64encode, base64decode } = require('nodejs-base64');
+const hljs = require('highlight.js');
 
 const matchHTMLTags = /<(\/)?[^\!].*?(\/)?>/gm;
 const commentTags = /<!--(\s)?TAG:(\s)?\|(.*?)\|(\s)?-->/gm;
+const matchMarkdownCode = /`(``)?[a-z]*\n*[\s\S]*?\n*`(``)?/gm;
+const replaced = /<!REPLACED\|(.*)\|REPLACED\/>/gm;
 
 const commentHTMLTags = input => {
 	return input.replace(matchHTMLTags, m => {
 		return `<!-- TAG: |${base64encode(m)}| -->`;
+	});
+};
+
+const replaceMarkdownCode = input => {
+	return input.replace(matchMarkdownCode, m => {
+		return `<!REPLACED|${base64encode(m)}|REPLACED/>`;
+	});
+};
+
+const replaceReplacedBack = input => {
+	return input.replace(replaced, function(m, base64Tag) {
+		return base64decode(base64Tag);
 	});
 };
 
@@ -126,7 +141,13 @@ const readFile = async (...args) => {
 		for (const slidePath of slidePaths) {
 			const slideId = nanoid();
 			const slidePathName = basename(slidePath);
-			const slideContentOrg = commentHTMLTags(await readFile(slidePath));
+			const slideContentOrg = await pipe([
+				await readFile(slidePath),
+				replaceMarkdownCode,
+				commentHTMLTags,
+				replaceReplacedBack
+			]);
+			// const slideContentOrg = commentHTMLTags(await readFile(slidePath));
 
 			const { attributes: metaSrc, body: slideContent } = fm(
 				slideContentOrg
@@ -146,9 +167,15 @@ const readFile = async (...args) => {
 			};
 
 			if (await exists(notesPath)) {
-				const notesContentOrg = commentHTMLTags(
-					await readFile(notesPath)
-				);
+				const notesContentOrg = await pipe([
+					await readFile(notesPath),
+					replaceMarkdownCode,
+					commentHTMLTags,
+					replaceReplacedBack
+				]);
+				// const notesContentOrg = commentHTMLTags(
+				// 	await readFile(notesPath)
+				// );
 				const { attributes: notesMeta, body: notesContent } = fm(
 					notesContentOrg
 				);
@@ -288,6 +315,38 @@ const readFile = async (...args) => {
 			}
 		});
 
+		$('table').each(function() {
+			$(this).addClass('reveal');
+		});
+
+		$('text-left').each(function(i, item) {
+			item.tagName = 'div';
+			$(this).css('text-align', 'left');
+		});
+
+		$('text-right').each(function(i, item) {
+			item.tagName = 'div';
+			$(this).css('text-align', 'right');
+		});
+
+		$('code').each(function(index, element) {
+			const attr = $(this).attr();
+			if (attr && attr.class && typeof attr.class === 'string') {
+				const classes = attr.class.split(' ');
+				let lang;
+				classes.map(v => {
+					if (v.includes('language-')) {
+						lang = v.replace(/language-/gm, '');
+					}
+				});
+				if (lang) {
+					const result = hljs.highlight(lang, $(this).text(), true);
+					$(this).html(result.value);
+					$(this).addClass('hljs');
+				}
+			}
+		});
+
 		projectHTML = $.html();
 
 		await writeFile(projectHTMLPath, projectHTML);
@@ -343,4 +402,13 @@ function isDecimal(number) {
 function getDecimalPointsAsNumber(number) {
 	const diff = `${number}`.split('.')[1];
 	return parseInt(diff);
+}
+
+async function pipe(inputArray) {
+	let input = await inputArray[0];
+	for (let i = 0; i < inputArray.length; i++) {
+		if (i === 0) continue;
+		input = await inputArray[i](input);
+	}
+	return input;
 }

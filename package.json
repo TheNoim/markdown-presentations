@@ -13,6 +13,7 @@
 		"fast-glob": "^2.2.6",
 		"front-matter": "^3.0.2",
 		"fs-extra": "^7.0.1",
+		"highlight.js": "^9.15.6",
 		"lodash": "^4.17.11",
 		"nanoid": "^2.0.1",
 		"nodejs-base64": "^1.0.3",

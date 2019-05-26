@@ -1,0 +1,8 @@
+-   **Hermes** verliebt sich in die athenische Königstochter **Herse**
+-   Er trifft nur die Schwester **Aglauros**
+-   **Minerva** (Athene) hat **Aglauros** mit Hilfe der Göttin **Invidia** verzaubert
+-   _**Aglauros**_ ist deshalb neidisch auf **Herse**
+-   _Sie_ versucht die Aufmerksamkeit von **Hermes** zu bekommen
+-   **Hermes** nimmt sie wörtlich:
+    -   _"Nimmer verlass' ich den Sitz, bis du dich von hinnen begeben."_
+    -   Wird in einen Stein verwandelt

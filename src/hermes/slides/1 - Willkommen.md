@@ -5,7 +5,7 @@ slide: 1
 
 ![Hermes Symbol](https://fs.noim.io/school/hermes/Hermes-Symbol2.png)
 
-<!-- .mod: class="no-note" -->
+<mod class="no-note"></mod>
 
 # Hermes
 

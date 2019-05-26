@@ -291,12 +291,7 @@ const readFile = async (...args) => {
 
 		$comments.each(function() {
 			const self = $(this);
-			let parent;
-			if (self.prev().length > 0) {
-				parent = self.prev();
-			} else {
-				parent = self.parent();
-			}
+			let parent = getParentOf(self);
 			/**
 			 * @type {string}
 			 */
@@ -310,6 +305,53 @@ const readFile = async (...args) => {
 				for (const Key in attrObjects) {
 					const currentAttr = parent.attr(Key) || '';
 					parent.attr(Key, currentAttr + ' ' + attrObjects[Key]);
+				}
+				self.remove();
+			}
+		});
+
+		$('mod').each(function() {
+			const self = $(this);
+			const attr = self.attr();
+			let parent = getParentOf(self);
+			for (const Key in attr) {
+				copyKeyTo(Key, parent, self, attr);
+			}
+			self.remove();
+		});
+
+		$('fragment').each(function(index, item) {
+			const self = $(this);
+			const attr = self.attr();
+			let parent = getParentOf(self);
+
+			if (self.attr('group') !== undefined) {
+				self.children('*').each(function() {
+					$(this).addClass('fragment');
+					if (self.attr('index')) {
+						$(this).attr('data-fragment-index', self.attr('index'));
+					}
+					for (const Key in attr) {
+						if (Key === 'index' || Key === 'group') continue;
+						copyKeyTo(Key, $(this), self, attr);
+					}
+				});
+				self.children().each(function() {
+					$(this).appendTo(parent);
+				});
+				// self.children('*').appendTo(parent);
+				// if (self.prev()) {
+				// 	self.prev().remove();
+				// }
+				// self.remove();
+			} else {
+				parent.addClass('fragment');
+				if (self.attr('index')) {
+					parent.attr('data-fragment-index', self.attr('index'));
+				}
+				for (const Key in attr) {
+					if (Key === 'index') continue;
+					copyKeyTo(Key, parent, self, attr);
 				}
 				self.remove();
 			}
@@ -411,4 +453,28 @@ async function pipe(inputArray) {
 		input = await inputArray[i](input);
 	}
 	return input;
+}
+
+function getParentOf(self) {
+	let parent;
+	if (self.prev().length > 0) {
+		parent = self.prev();
+	} else {
+		parent = self.parent();
+	}
+	return parent;
+}
+
+function copyKeyTo(Key, parent, self, attr) {
+	switch (Key) {
+		case 'class':
+			const classes = attr[Key].split(' ');
+			classes.forEach(cl => parent.addClass(cl));
+			break;
+		case 'style':
+			parent.css({ ...self.css(), ...parent.css() });
+			break;
+		default:
+			parent.attr(Key, attr[Key]);
+	}
 }

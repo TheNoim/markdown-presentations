@@ -8,7 +8,7 @@ const {
 	lstat,
 	copyFile
 } = require('fs-extra');
-const { join, basename } = require('path');
+const { join, basename, relative } = require('path');
 const { defaultsDeep, template, get } = require('lodash');
 const cheerio = require('cheerio');
 const fg = require('fast-glob');
@@ -75,12 +75,29 @@ const readFile = async (...args) => {
 
 	await ensureDir(distDir);
 
+	await ensureDir(tmpDir);
+
 	const projectList = [];
 
 	const cssPath = join(__dirname, './base/index.css');
 	const jsPath = join(__dirname, './base/index.js');
 	const htmlPath = join(__dirname, './base/index.html');
 	const sassPath = join(__dirname, './base/index.scss');
+
+	const newPreviewDataFile = join(tmpDir, './data.js');
+
+	const previewHTMLPath = join(tmpDir, './index.html');
+
+	const previewFiles = await fg.async([join(__dirname, './preview/**/*')]);
+
+	for (const previewFile of previewFiles) {
+		const relativePath = relative(
+			join(__dirname, './preview/'),
+			previewFile
+		);
+		const pathToTmp = join(tmpDir, relativePath);
+		await copyFile(previewFile, pathToTmp);
+	}
 
 	const cssTemplateSrc = await readFile(cssPath);
 	const jsTemplateSrc = await readFile(jsPath);
@@ -119,10 +136,6 @@ const readFile = async (...args) => {
 		const projectCSS = cssTemplate(config);
 
 		await writeFile(projectCSSPath, projectCSS);
-
-		const projectJS = jsTemplate(config);
-
-		await writeFile(projectJSPath, projectJS);
 
 		await copyFile(sassPath, projectSASSPath);
 
@@ -393,6 +406,16 @@ const readFile = async (...args) => {
 
 		await writeFile(projectHTMLPath, projectHTML);
 
+		const newConfig = {
+			...config,
+			slides: slides.length,
+			env: process.env.NODE_ENV || 'development'
+		};
+
+		const projectJS = jsTemplate(newConfig);
+
+		await writeFile(projectJSPath, projectJS);
+
 		await ensureDir(projectDistDir);
 
 		const bundler = new Bundler(projectHTMLPath, {
@@ -406,9 +429,26 @@ const readFile = async (...args) => {
 
 		projectList.push({
 			path: project,
-			config
+			config: newConfig
 		});
 	}
+
+	const dataFile = `
+	export const data = ${JSON.stringify(
+		projectList.map(({ path, config }) => ({ ...config, path }))
+	)}
+	`;
+
+	await writeFile(newPreviewDataFile, dataFile);
+
+	const bundler = new Bundler(previewHTMLPath, {
+		publicUrl: './',
+		outDir: distDir,
+		watch: false,
+		bundleNodeModules: true
+	});
+
+	await bundler.bundle();
 })();
 
 function generateSection(slide, $) {

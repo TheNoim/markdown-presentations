@@ -36,4 +36,4 @@ Reveal.initialize(defaultsDeep(revealOptions, {
 	},
 }));
 
-initRemoteSocket(Reveal, "<%= obj.remote %>");
+initRemoteSocket(Reveal, "<%= obj.remote %>", <%= JSON.stringify(obj) %>);

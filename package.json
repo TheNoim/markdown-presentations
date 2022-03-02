@@ -19,7 +19,7 @@
 		"nanoid": "^2.0.1",
 		"nodejs-base64": "^1.0.3",
 		"reveal-socket-remote": "^1.0.0",
-		"reveal.js": "^3.8.0",
+		"reveal.js": "^4.3.0",
 		"sass": "^1.20.1",
 		"vue": "^2.5.13",
 		"yaml-front-matter": "^4.0.0"
